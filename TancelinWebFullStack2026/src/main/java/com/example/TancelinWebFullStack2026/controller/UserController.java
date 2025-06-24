@@ -33,7 +33,7 @@ public class UserController {
     @PostMapping("/auth/login")
     public BaseResponseDto loginUser(@RequestBody UserLoginDto userLoginDto) {
         if(userService.checkUserNameExists(userLoginDto.getEmail())) {
-            if(userService.verifiyUser(userLoginDto.getEmail(), userLoginDto.getPassword())) {
+            if(userService.verifyUser(userLoginDto.getEmail(), userLoginDto.getPassword())) {
                 Map<String, String> data = new HashMap<>();
                 data.put("token", userService.generateToken(userLoginDto.getEmail(), userLoginDto.getPassword()));
                 return new BaseResponseDto("success", data);
