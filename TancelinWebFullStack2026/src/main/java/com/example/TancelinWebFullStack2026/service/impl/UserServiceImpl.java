@@ -1,6 +1,8 @@
 package com.example.TancelinWebFullStack2026.service;
 
 import com.example.TancelinWebFullStack2026.config.jwt.JwtTokenProvider;
+import com.example.TancelinWebFullStack2026.exception.DataIntegrityViolationException;
+import com.example.TancelinWebFullStack2026.exception.ObjectNotFoundException;
 import com.example.TancelinWebFullStack2026.model.User;
 import com.example.TancelinWebFullStack2026.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +61,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean createUser(User user) {
         if (checkUserNameExists(user.getEmail())) {
-            return false;
+            throw new DataIntegrityViolationException("Email already in use: " + user.getEmail());
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
@@ -85,23 +87,25 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean updateUser(Long id, User userData) {
-        return userRepository.findById(id).map(user -> {
-            if (!user.getEmail().equals(userData.getEmail()) && checkUserNameExists(userData.getEmail())) {
-                return false;
-            }
-            user.setName(userData.getName());
-            user.setEmail(userData.getEmail());
-            if(userData.getPassword() != null && !userData.getPassword().isEmpty()) {
-                user.setPassword(passwordEncoder.encode(userData.getPassword()));
-            }
-            userRepository.save(user);
-            return true;
-        }).orElse(false);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ObjectNotFoundException("User not found with id: " + id));
+
+        if (!user.getEmail().equals(userData.getEmail()) && checkUserNameExists(userData.getEmail())) {
+            throw new DataIntegrityViolationException("Email already in use: " + userData.getEmail());
+        }
+
+        user.setName(userData.getName());
+        user.setEmail(userData.getEmail());
+        if (userData.getPassword() != null && !userData.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userData.getPassword()));
+        }
+        userRepository.save(user);
+        return true;
     }
 
     @Override
     public boolean deleteUser(Long id) {
-        if(userRepository.existsById(id)) {
+        if (userRepository.existsById(id)) {
             userRepository.deleteById(id);
             return true;
         }
